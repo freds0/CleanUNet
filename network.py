@@ -94,6 +94,7 @@ class PositionwiseFeedForward(nn.Module):
     def __init__(self, d_in, d_hid, dropout=0.1):
         super().__init__()
         self.w_1 = nn.Linear(d_in, d_hid) # position-wise
+        self.activation = nn.ReLU(inplace=False) 
         self.w_2 = nn.Linear(d_hid, d_in) # position-wise
         self.layer_norm = nn.LayerNorm(d_in, eps=1e-6)
         self.dropout = nn.Dropout(dropout)
@@ -102,7 +103,7 @@ class PositionwiseFeedForward(nn.Module):
 
         residual = x
 
-        x = self.w_2(F.relu(self.w_1(x)))
+        x = self.w_2(self.activation(self.w_1(x)))
         x = self.dropout(x)
         x += residual
 
@@ -271,7 +272,7 @@ class CleanUNet(nn.Module):
         for i in range(encoder_n_layers):
             self.encoder.append(nn.Sequential(
                 nn.Conv1d(channels_input, channels_H, kernel_size, stride),
-                nn.ReLU(),
+                nn.ReLU(inplace=False),
                 nn.Conv1d(channels_H, channels_H * 2, 1), 
                 nn.GLU(dim=1)
             ))
@@ -289,7 +290,7 @@ class CleanUNet(nn.Module):
                     nn.Conv1d(channels_H, channels_H * 2, 1), 
                     nn.GLU(dim=1),
                     nn.ConvTranspose1d(channels_H, channels_output, kernel_size, stride),
-                    nn.ReLU()
+                    nn.ReLU(inplace=False)
                 ))
             channels_output = channels_H
             
@@ -348,9 +349,8 @@ class CleanUNet(nn.Module):
         # decoder
         for i, upsampling_block in enumerate(self.decoder):
             skip_i = skip_connections[i]
-            x += skip_i[:, :, :x.shape[-1]]
+            x = x + skip_i[:, :, :x.shape[-1]].clone()
             x = upsampling_block(x)
-
         x = x[:, :, :L] * std
         return x
 

@@ -178,47 +178,56 @@ def sampling(net, noisy_audio):
     return net(noisy_audio)
 
 
-def loss_fn(net, X, ell_p, ell_p_lambda, stft_lambda, mrstftloss, **kwargs):
-    """
-    Loss function in CleanUNet
+#def loss_fn(net, X, ell_p, ell_p_lambda, stft_lambda, mrstftloss, **kwargs):
+class loss_cleanunet:
+    def __init__(self, ell_p, ell_p_lambda, stft_lambda, mrstftloss, **kwargs):
+        """
+        Loss function in CleanUNet
 
-    Parameters:
-    net: network
-    X: training data pair (clean audio, noisy_audio)
-    ell_p: \ell_p norm (1 or 2) of the AE loss
-    ell_p_lambda: factor of the AE loss
-    stft_lambda: factor of the STFT loss
-    mrstftloss: multi-resolution STFT loss function
+        Parameters:
+        ell_p: \ell_p norm (1 or 2) of the AE loss
+        ell_p_lambda: factor of the AE loss
+        stft_lambda: factor of the STFT loss
+        mrstftloss: multi-resolution STFT loss function
 
-    Returns:
-    loss: value of objective function
-    output_dic: values of each component of loss
-    """
+        """
+        self.ell_p = ell_p
+        self.ell_p_lambda = ell_p_lambda
+        self.stft_lambda = stft_lambda
+        self.mrstftloss = mrstftloss
 
-    assert type(X) == tuple and len(X) == 2
-    
-    clean_audio, noisy_audio = X
-    B, C, L = clean_audio.shape
-    output_dic = {}
-    loss = 0.0
-    
-    # AE loss
-    denoised_audio = net(noisy_audio)  
+    def __call__(self, clean_audio, denoised_audio):
+        """
+        Loss Call function
+        Parameters:
+        clean_audio: clean waveform
+        noisy_audio: noisy waveform
 
-    if ell_p == 2:
-        ae_loss = nn.MSELoss()(denoised_audio, clean_audio)
-    elif ell_p == 1:
-        ae_loss = F.l1_loss(denoised_audio, clean_audio)
-    else:
-        raise NotImplementedError
-    loss += ae_loss * ell_p_lambda
-    output_dic["reconstruct"] = ae_loss.data * ell_p_lambda
+        Returns:
+        loss: value of objective function
+        output_dic: values of each component of loss
+        """        
+        B, C, L = clean_audio.shape
+        output_dic = {}
+        loss = 0.0
+        
+        # AE loss
+        #denoised_audio = net(noisy_audio)  
 
-    if stft_lambda > 0:
-        sc_loss, mag_loss = mrstftloss(denoised_audio.squeeze(1), clean_audio.squeeze(1))
-        loss += (sc_loss + mag_loss) * stft_lambda
-        output_dic["stft_sc"] = sc_loss.data * stft_lambda
-        output_dic["stft_mag"] = mag_loss.data * stft_lambda
+        if self.ell_p == 2:
+            ae_loss = nn.MSELoss()(denoised_audio, clean_audio)
+        elif self.ell_p == 1:
+            ae_loss = F.l1_loss(denoised_audio, clean_audio)
+        else:
+            raise NotImplementedError
+        loss += ae_loss * self.ell_p_lambda
+        output_dic["reconstruct"] = ae_loss.data * self.ell_p_lambda
 
-    return loss, output_dic
+        if self.stft_lambda > 0:
+            sc_loss, mag_loss = self.mrstftloss(denoised_audio.squeeze(1), clean_audio.squeeze(1))
+            loss += (sc_loss + mag_loss) * self.stft_lambda
+            output_dic["stft_sc"] = sc_loss.data * self.stft_lambda
+            output_dic["stft_mag"] = mag_loss.data * self.stft_lambda
+
+        return loss, output_dic
 

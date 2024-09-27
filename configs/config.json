@@ -43,7 +43,7 @@
         }
     },
     "trainset_config": {
-        "data_dir": "../DATASETS/LJSpeech-1.1/wavs",
+        "data_dir": "../../DATASETS/LJSpeech-1.1/wavs",
         "train_metadata": "./filelists/ljs_audio_text_train_filelist.txt",
         "test_metadata": "./filelists/ljs_audio_text_val_filelist.txt",
         "crop_length_sec": 3,

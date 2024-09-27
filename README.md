@@ -9,54 +9,75 @@ through a set of losses defined over both waveform and multi-resolution spectrog
 the state-of-the-art models in terms of denoised speech quality
 from various objective and subjective evaluation metrics. Sound demos can be found in [This blog](https://nv-adlr.github.io/projects/cleanunet/).
 
+
+![CleanUNet Architecture](./imgs/clenunet_arch.png)
 ## Datasets
 
-- [Microsoft DNS 2020](https://arxiv.org/ftp/arxiv/papers/2005/2005.13981.pdf) dataset. The dataset, pre-processing codes, and instruction to generate training data can be found in [this link](https://github.com/microsoft/DNS-Challenge/tree/interspeech2020/master). Assume the dataset is stored under ```./dns```. Before generating clean-noisy data pairs, modify the following parameters in their ```noisyspeech_synthesizer.cfg``` file: 
+This code is adapted to use any dataset containing clean audios, and during training data augmentation is applied to create a version with noises. Therefore, just create the .csv file and include it in the config.json. As an example, there is a version using the [LJSpeech-1.1](https://keithito.com/LJ-Speech-Dataset/) dataset. The transcripts are not required. The filelists can be found at:
+
 ```
-total_hours: 500, 
-snr_lower: -5, 
-snr_upper: 25, 
-total_snrlevels: 31
-```
-And also update paths as (since their original code uses Windows-style paths)
-```
-noise_dir: ./datasets/noise
-speech_dir: ./datasets/clean
-noisy_destination: ./training_set/noisy
-clean_destination: ./training_set/clean
-noise_destination: ./training_set/noise
-log_dir: ./logs
-unit_tests_log_dir: ./unittests_logs
-```
-Then, for conciseness and to comply with our data loading codes, modify file names (lines 198-201) in their ```noisyspeech_synthesizer_singleprocess.py``` to 
-```
-noisyfilename = 'fileid_' + str(file_num) + '.wav'
-cleanfilename = 'fileid_' + str(file_num) + '.wav'
-noisefilename = 'fileid_' + str(file_num) + '.wav'
-```
-To generate training data, run 
-```
-python noisyspeech_synthesizer_singleprocess.py
-```
-It is also recommended to rename files in the test set for conciseness:
-```
-cd ./dns/datasets/test_set/synthetic/no_reverb/noisy/
-for NAME in $(ls ./); do arr=(${NAME//fileid_/ }); mv ${NAME} noisy_fileid_${arr[1]}; done 
+filelists/ljs_audio_text_train_filelist.txt
+filelists/ljs_audio_text_test_filelist.txt
+filelists/ljs_audio_text_val_filelist.txt
 ```
 
-After these steps, we assume that the structure of the dataset folder is:
-```
-Training sets: 
-./dns/training_set/clean/fileid_{0..59999}.wav
-./dns/training_set/noisy/fileid_{0..59999}.wav
-./dns/training_set/noise/fileid_{0..59999}.wav
+In `config.json`, just include the path to the csv files:
 
-Testing sets (no-reverb):
-./dns/datasets/test_set/synthetic/no_reverb/clean/clean_fileid_{0..299}.wav
-./dns/datasets/test_set/synthetic/no_reverb/noisy/noisy_fileid_{0..299}.wav
+```
+"trainset_config": {
+    "data_dir": "../DATASETS/LJSpeech-1.1/wavs",
+    "train_metadata": "./filelists/ljs_audio_text_train_filelist.txt",
+    "test_metadata": "./filelists/ljs_audio_text_val_filelist.txt",
 ```
 
-- Other datasets are also supported; lines 49-50 of ```dataset.py``` need to be carefully changed to handle paths and file names.
+For data augmentation, a basic configuration is already included in `config.json`:
+
+```
+        "augmentations": [
+            {
+                "name": "Mp3Compression",
+                "params": {
+                    "min_bitrate": 128,
+                    "max_bitrate": 192,
+                    "backend": "pydub",
+                    "p": 0.2
+                }
+            },
+            {
+                "name": "AddBackgroundNoise",
+                "params": {
+                    "sounds_path": "./noises_path/",
+                    "min_snr_in_db": 15.0,
+                    "max_snr_in_db": 30.0,
+                    "p": 0.2
+                }
+            },  
+            {
+                "name": "AddGaussianSNR",
+                "params": {
+                    "min_snr_in_db": 15,
+                    "max_snr_in_db": 30,
+                    "p": 0.2
+                }
+            },
+            {
+                "name": "LowPassFilter",
+                "params": {
+                    "min_cutoff_freq": 4000,
+                    "max_cutoff_freq": 7000,
+                    "p": 0.2
+                }
+            },
+            {
+                "name": "HighPassFilter",
+                "params": {
+                    "min_cutoff_freq": 400,
+                    "max_cutoff_freq": 2000,
+                    "p": 0.2
+                }
+            }
+        ]  
+```
 
 ## Training
 
@@ -67,6 +88,18 @@ The ```$EXP``` variable can be any config name in ```./configs/```, such as ```D
 We use 8 GPUs for training. The global batch size is 64 and we train the models for 250K iterations. Note that, this is different from the training setup in our paper i.e., 1M iterations with a batch size of 16. We find negligible difference in terms of objective and subjective evaluation, but the current setup is faster.
 
 **Pre-trained** models for denoising are provided in ```./exp/${EXP}/checkpoint/pretrained.pkl``` (each one has size ~177Mb; use ```git lfs``` to download). Note that these models are not trained to remove reverb. 
+
+## Fine Tuning
+
+To perform finetuning, you can include the path to the checkpoint in config.json:
+
+```
+"checkpoint_path": "exp/DNS-large-full/checkpoint/pretrained.pkl",
+```
+
+and run the training:
+
+```python train.py -c configs/config.json```
 
 ## Denoising
 

@@ -10,7 +10,7 @@ the state-of-the-art models in terms of denoised speech quality
 from various objective and subjective evaluation metrics. Sound demos can be found in [This blog](https://nv-adlr.github.io/projects/cleanunet/).
 
 
-![CleanUNet Architecture](./imgs/clenunet_arch.png)
+![CleanUNet Architecture](./imgs/cleanunet_arch.png)
 ## Datasets
 
 This code is adapted to use any dataset containing clean audios, and during training data augmentation is applied to create a version with noises. Therefore, just create the .csv file and include it in the config.json. As an example, there is a version using the [LJSpeech-1.1](https://keithito.com/LJ-Speech-Dataset/) dataset. The transcripts are not required. The filelists can be found at:

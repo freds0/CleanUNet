@@ -25,16 +25,7 @@ class AudioAugmenter:
             elif name == 'AddGaussianSNR':
                 aug_list.append(AddGaussianSNR(**params))
             elif name == 'AddBackgroundNoise':
-                # Handle 'sounds_path' separately as it's required
-                sounds_path = params.pop('sounds_path', None)
-                if sounds_path is None:
-                    raise ValueError("Parameter 'sounds_path' is required for AddBackgroundNoise")
-                aug_list.append(
-                    AddBackgroundNoise(
-                        sounds_path=sounds_path,
-                        **params
-                    )
-                )
+                aug_list.append(AddBackgroundNoise(**params))
             elif name == 'LowPassFilter':
                 aug_list.append(LowPassFilter(**params))
             elif name == 'HighPassFilter':

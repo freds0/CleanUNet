@@ -46,7 +46,7 @@ For data augmentation, a basic configuration is already included in `config.json
             {
                 "name": "AddBackgroundNoise",
                 "params": {
-                    "sounds_path": "./noises_path/",
+                    "sounds_path": "/path/to/noise_files",
                     "min_snr_in_db": 15.0,
                     "max_snr_in_db": 30.0,
                     "p": 0.2
@@ -75,7 +75,14 @@ For data augmentation, a basic configuration is already included in `config.json
                     "max_cutoff_freq": 2000,
                     "p": 0.2
                 }
-            }
+            },
+            {
+                "name": "ApplyImpulseResponse",
+                "params": {
+                    "ir_path": "/path/to/sound_folder",
+                    "p": 0.2
+                }
+            }            
         ]  
 ```
 

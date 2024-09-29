@@ -43,9 +43,10 @@
         }
     },
     "trainset_config": {
-        "data_dir": "../../DATASETS/LJSpeech-1.1/wavs",
+        "data_dir": "../../DATASETS/LJSpeech-1.1/",
         "train_metadata": "./filelists/ljs_audio_text_train_filelist.txt",
         "test_metadata": "./filelists/ljs_audio_text_val_filelist.txt",
+        "audio_min_sec":1.0,
         "crop_length_sec": 5,
         "sample_rate": 16000,
         "n_fft": 1024, 
@@ -65,10 +66,10 @@
             {
                 "name": "AddBackgroundNoise",
                 "params": {
-                    "sounds_path": "../DATASETS/noises/",
+                    "sounds_path": "../../DATASETS/noises_links",
                     "min_snr_in_db": 15.0,
                     "max_snr_in_db": 30.0,
-                    "p": 0.6
+                    "p": 0.2
                 }
             },   
             {
@@ -94,7 +95,14 @@
                     "max_cutoff_freq": 2000,
                     "p": 0.2
                 }
-            }
+            },
+            {
+                "name": "ApplyImpulseResponse",
+                "params": {
+                    "ir_path": "../../DATASETS/rirs_links/",
+                    "p": 0.2
+                }
+            }              
         ]                         
     },
     "gen_config":{

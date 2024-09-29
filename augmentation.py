@@ -7,7 +7,7 @@ import soundfile as sf
 
 from audiomentations import (
     Compose, Mp3Compression, AddGaussianSNR, AddBackgroundNoise,
-    PolarityInversion, LowPassFilter, HighPassFilter
+    PolarityInversion, LowPassFilter, HighPassFilter, ApplyImpulseResponse
 )
 
 class AudioAugmenter:
@@ -30,6 +30,8 @@ class AudioAugmenter:
                 aug_list.append(LowPassFilter(**params))
             elif name == 'HighPassFilter':
                 aug_list.append(HighPassFilter(**params))
+            elif name == 'ApplyImpulseResponse':
+                aug_list.append(ApplyImpulseResponse(**params))                
             else:
                 print(f"Warning: Unknown augmentation '{name}'")
         return Compose(aug_list)

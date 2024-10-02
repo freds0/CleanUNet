@@ -265,6 +265,8 @@ def load_checkpoint(checkpoint_path, model):
     assert os.path.isfile(checkpoint_path)
     print("Loading checkpoint '{}'".format(checkpoint_path))
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')    
+    learning_rate = checkpoint_dict['learning_rate']
+    iteration = checkpoint_dict['iteration']
     print(checkpoint_dict.keys())
     model.load_state_dict(checkpoint_dict['model_state_dict'])
     '''
@@ -283,7 +285,7 @@ def load_checkpoint(checkpoint_path, model):
         
     return model, optimizer, learning_rate, iteration
     '''
-    return model
+    return model, learning_rate, iteration
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):

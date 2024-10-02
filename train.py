@@ -118,8 +118,10 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
         print('exp_path:', exp_path)
     
     # Create tensorboard logger.
-    log_directory = os.path.join(log["directory"], exp_path)
-    ckpt_directory = os.path.join(log_directory, 'checkpoint')
+    output_dir = os.path.join(log["directory"], exp_path)
+    log_directory = os.path.join(output_dir, 'logs')
+    ckpt_directory = os.path.join(output_dir, 'checkpoint')
+
     if rank == 0:
         logger = prepare_directories_and_logger(
             log_directory, log_directory, ckpt_directory, rank=0)
@@ -153,23 +155,26 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
     # define optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=optimization["learning_rate"], weight_decay=optimization["weight_decay"])
     # define learning rate scheduler
-    n_iter = 0 # todo: load from checkpoint
     scheduler = LinearWarmupCosineDecay(
                     optimizer,
                     lr_max=optimization["learning_rate"],
                     n_iter=optimization["n_iters"],
-                    iteration=n_iter,
+                    iteration=global_step,
                     divider=25,
                     warmup_proportion=0.05,
                     phase=('linear', 'cosine'),
                 )
     
     # load checkpoint
+    global_step = 0
     if checkpoint_path is not None:
         try:
-            model = load_checkpoint(checkpoint_path, model)
+            model, _learning_rate, iteration = load_checkpoint(checkpoint_path, model)
             print('Model at %s has been loaded' % (checkpoint_path))
             print('Checkpoint model loaded successfully')            
+            if False: #use_saved_learning_rate:
+                learning_rate = _learning_rate             
+            global_step = iteration + 1                    
         except:
             print(f'No valid checkpoint model found at {checkpoint_path}, start training from initialization.')           
 
@@ -183,7 +188,6 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
 
     # training
     epoch = 1
-    global_step = 0
     print("Starting training...")    
     while global_step < optimization["n_iters"] + 1:
         # for each epoch

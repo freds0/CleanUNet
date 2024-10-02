@@ -326,7 +326,7 @@ class CleanUNet(nn.Module):
         
         # normalization and padding
         std = noisy_audio.std(dim=2, keepdim=True) + 1e-3
-        noisy_audio /= std
+        noisy_audio = noisy_audio / std
         x = padding(noisy_audio, self.encoder_n_layers, self.kernel_size, self.stride)
         
         # encoder

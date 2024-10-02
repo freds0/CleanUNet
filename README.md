@@ -86,6 +86,8 @@ For data augmentation, a basic configuration is already included in `config.json
         ]  
 ```
 
+Check out the repository (room-impulse-responses)[https://github.com/RoyJames/room-impulse-responses] to download datasets for Room Impulse Responses
+
 ## Training
 
 The ```$EXP``` variable can be any config name in ```./configs/```, such as ```DNS-large-full``` and ```DNS-large-high```. The default experiment path is ```./exp```; it can be changed by modifying ```train_config[log[directory]]``` in the config files. ```trainset_config[root]``` needs to be set as the root path of the dataset. Then, the training code is

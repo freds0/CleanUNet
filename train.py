@@ -144,7 +144,7 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
                                 num_gpus=num_gpus)
     print('Data loaded')
     # initialize the model
-    model = CleanUNet(**network_config).cuda()
+    model = CleanUNet(**network_config).to(device)
     model.train()
     print_size(model)
 
@@ -154,6 +154,18 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
 
     # define optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=optimization["learning_rate"], weight_decay=optimization["weight_decay"])
+    
+    # load checkpoint
+    global_step = 0
+    if checkpoint_path is not None:
+        try:
+            model, optimizer, _learning_rate, iteration = load_checkpoint(checkpoint_path, model)
+            print('Model at %s has been loaded' % (checkpoint_path))
+            print('Checkpoint model loaded successfully')            
+            global_step = iteration + 1
+        except:
+            print(f'No valid checkpoint model found at {checkpoint_path}, start training from initialization.')           
+
     # define learning rate scheduler
     scheduler = LinearWarmupCosineDecay(
                     optimizer,
@@ -164,23 +176,10 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
                     warmup_proportion=0.05,
                     phase=('linear', 'cosine'),
                 )
-    
-    # load checkpoint
-    global_step = 0
-    if checkpoint_path is not None:
-        try:
-            model, _learning_rate, iteration = load_checkpoint(checkpoint_path, model)
-            print('Model at %s has been loaded' % (checkpoint_path))
-            print('Checkpoint model loaded successfully')            
-            if False: #use_saved_learning_rate:
-                learning_rate = _learning_rate             
-            global_step = iteration + 1                    
-        except:
-            print(f'No valid checkpoint model found at {checkpoint_path}, start training from initialization.')           
 
     # define multi resolution stft loss
     if loss_config["stft_lambda"] > 0:
-        mrstftloss = MultiResolutionSTFTLoss(**loss_config["stft_config"]).cuda()
+        mrstftloss = MultiResolutionSTFTLoss(**loss_config["stft_config"]).to(device)
     else:
         mrstftloss = None
 
@@ -193,8 +192,8 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
         # for each epoch
         for step, (noisy_audio, clean_audio) in enumerate(trainloader): 
             
-            noisy_audio = noisy_audio.cuda()
-            clean_audio = clean_audio.cuda()
+            noisy_audio = noisy_audio.to(device)
+            clean_audio = clean_audio.to(device)
 
             optimizer.zero_grad()
             # forward propagation
@@ -205,6 +204,7 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
                 reduced_loss = reduce_tensor(loss.data, num_gpus).item()
             else:
                 reduced_loss = loss.item()
+
             # back-propagation
             loss.backward()
             # gradient clipping
@@ -218,7 +218,7 @@ def train(num_gpus, rank, group_name, exp_path, checkpoint_path, log, optimizati
 
             if global_step > 0 and global_step % 10 == 0 and rank == 0: 
                 # save to tensorboard
-                logger.add_scalar("Train/Train-Loss", loss.item(), global_step)
+                logger.add_scalar("Train/Train-Loss", reduced_loss, global_step)
                 #logger.add_scalar("Train/Train-Reduced-Loss", reduced_loss, global_step)
                 logger.add_scalar("Train/Gradient-Norm", grad_norm, global_step)                
                 logger.add_scalar("Train/learning-rate", optimizer.param_groups[0]["lr"], global_step)                    

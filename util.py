@@ -234,58 +234,17 @@ class loss_cleanunet:
 ####################### training util #############################
 
 # load checkpoint
-'''
-time0 = time.time()
-if log["ckpt_iter"] == 'max':
-    ckpt_iter = find_max_epoch(ckpt_directory)
-else:
-    ckpt_iter = log["ckpt_iter"]
-if ckpt_iter >= 0:
-    try:
-        # load checkpoint file
-        model_path = os.path.join(ckpt_directory, '{}.pkl'.format(ckpt_iter))
-        checkpoint = torch.load(model_path, map_location='cpu')
-        
-        # feed model dict and optimizer state
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-        # record training time based on elapsed time
-        time0 -= checkpoint['training_time_seconds']
-        print('Model at iteration %s has been trained for %s seconds' % (ckpt_iter, checkpoint['training_time_seconds']))
-        print('checkpoint model loaded successfully')
-    except:
-        ckpt_iter = -1
-        print('No valid checkpoint model found, start training from initialization.')
-else:
-    ckpt_iter = -1
-    print('No valid checkpoint model found, start training from initialization.')
-'''
 def load_checkpoint(checkpoint_path, model):
     assert os.path.isfile(checkpoint_path)
     print("Loading checkpoint '{}'".format(checkpoint_path))
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')    
-    learning_rate = checkpoint_dict['learning_rate']
-    iteration = checkpoint_dict['iteration']
-    print(checkpoint_dict.keys())
     model.load_state_dict(checkpoint_dict['model_state_dict'])
-    '''
-    missing_keys, unexpected_keys = model.load_state_dict(checkpoint_dict['state_dict'], strict=False)
-
-    if len(missing_keys) > 0:
-        print("Missing keys:", missing_keys)
-    if len(unexpected_keys) > 0:
-        print("Unexpected keys:", unexpected_keys)
-           
     optimizer.load_state_dict(checkpoint_dict['optimizer'])
     learning_rate = checkpoint_dict['learning_rate']
     iteration = checkpoint_dict['iteration']
     print("Loaded checkpoint '{}' from iteration {}" .format(
         checkpoint_path, iteration))
-        
     return model, optimizer, learning_rate, iteration
-    '''
-    return model, learning_rate, iteration
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):

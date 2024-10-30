@@ -43,7 +43,7 @@
         }
     },
     "trainset_config": {
-        "data_dir": "../../DATASETS/LJSpeech-1.1/",
+        "data_dir": "../../Corpora/LJSpeech-1.1/",
         "train_metadata": "./filelists/ljs_audio_text_train_filelist.txt",
         "test_metadata": "./filelists/ljs_audio_text_val_filelist.txt",
         "audio_min_sec":1.0,
@@ -66,7 +66,16 @@
             {
                 "name": "AddBackgroundNoise",
                 "params": {
-                    "sounds_path": "../../DATASETS/noises_links",
+                    "datasets": [
+                        {
+                            "path": "../../Datasets/Slakh2100-FLAC-Redux-Reduced_wav/slakh2100_flac_redux/",
+                            "weight": 0.5
+                        },
+                        {
+                            "path": "../../Datasets/TAU/TAU-urban-acoustic-scenes-2020-mobile-development/audio/",
+                            "weight": 0.5
+                        }
+                    ],
                     "min_snr_in_db": 15.0,
                     "max_snr_in_db": 30.0,
                     "p": 0.2
@@ -99,7 +108,7 @@
             {
                 "name": "ApplyImpulseResponse",
                 "params": {
-                    "ir_path": "../../DATASETS/rirs_links/",
+                    "ir_path": "../../Datasets/rirs_links/",
                     "p": 0.2
                 }
             }              

@@ -4,6 +4,8 @@ import json
 from glob import glob
 import librosa
 import soundfile as sf
+from pathlib import Path
+import random
 
 from audiomentations import (
     Compose, Mp3Compression, AddGaussianSNR, AddBackgroundNoise,
@@ -25,16 +27,37 @@ class AudioAugmenter:
             elif name == 'AddGaussianSNR':
                 aug_list.append(AddGaussianSNR(**params))
             elif name == 'AddBackgroundNoise':
-                aug_list.append(AddBackgroundNoise(**params))
+                aug_list.append(self._create_noise_augmentation(params))
             elif name == 'LowPassFilter':
                 aug_list.append(LowPassFilter(**params))
             elif name == 'HighPassFilter':
                 aug_list.append(HighPassFilter(**params))
             elif name == 'ApplyImpulseResponse':
-                aug_list.append(ApplyImpulseResponse(**params))                
+                aug_list.append(ApplyImpulseResponse(**params))
             else:
                 print(f"Warning: Unknown augmentation '{name}'")
         return Compose(aug_list)
+
+    def _create_noise_augmentation(self, params):
+        datasets = params.get('datasets', [])
+        noise_files = []
+        for dataset in datasets:
+            dataset_path = dataset['path']
+            weight = dataset['weight']
+            print(f"Checking dataset path: {dataset_path}")
+            files = list(Path(dataset_path).rglob('*.wav'))  # Adjust to match your file type
+            if not files:
+                print(f"No files found in {dataset_path}")
+            else:
+                print(f"Found {len(files)} files in {dataset_path}")
+            weighted_files = files * int(weight * 100)  # Scale by weight
+            noise_files.extend(weighted_files)
+
+        if not noise_files:
+            raise ValueError("No noise files found in the specified datasets.")
+        
+        # Now pass the list of noise files to AddBackgroundNoise
+        return AddBackgroundNoise(sounds_path=noise_files, min_snr_in_db=params["min_snr_in_db"], max_snr_in_db=params["max_snr_in_db"], p=params["p"])
 
     def apply(self, waveform, sr):
         augmented_waveform = self.compose(samples=waveform, sample_rate=sr)
@@ -77,3 +100,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
